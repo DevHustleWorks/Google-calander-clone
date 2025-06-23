@@ -3,6 +3,8 @@ import { ChevronLeft, ChevronRight, } from 'lucide-react';
 import { useState } from 'react';
 import { dateFns } from '../lib/datefns';
 const clsx = (...classes) => classes.filter(Boolean).join(' ');
+export { clsx }; 
+
 export default function MiniCalendar({ CalanderPrevMonth, CalanderNextMonth }) {
   const weekDays = ["S", "M", "T", "W", "T", "F", "S"];
   const days = [
@@ -26,14 +28,14 @@ export default function MiniCalendar({ CalanderPrevMonth, CalanderNextMonth }) {
       <div className='grid grid-cols-8'>
         {
           [null, ...weekDays].map((_, idx) => (
-            <div key={idx} className='flex items-center justify-center text-center gap-3 text-xs font-semibold text-gray-500'>
+            <div key={idx} className='cursor-pointer flex items-center justify-center text-center gap-3 text-xs font-semibold text-gray-500'>
               {_ === null ? "" : _}
             </div>
           ))
         }
         {
           days.map((day, idx) => (
-            <span key={idx} className={clsx('w-[22px] h-[22px] text-[9px] flex items-center justify-center text-center',
+            <span key={idx} className={clsx('cursor-pointer w-[22px] h-[22px] text-[9px] flex items-center justify-center text-center',
               idx % 8 === 0 ? 'bg-gray-100' : '',
               idx % 8 === 1 ? 'text-red-500' : '',
               idx === 19 ? 'py-0 px-0 bg-blue-500 text-white font-semibold rounded-full' : ''

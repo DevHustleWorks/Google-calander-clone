@@ -1,11 +1,11 @@
 import ButtonWithDropdown from "./ButtonWithDropdown";
 import MiniCalendar from "./Minicalender";
 
-export default function Sidebar({gridStyle}) {
+export default function Sidebar({gridStyle, isSidebarOpen}) {
   return (
-    <div style={{...gridStyle}} className="w-64 bg-white  p-4 space-y-4 text-sm text-gray-800">
+    <div style={{...gridStyle, transform: isSidebarOpen ? "translateX(0)" : "translateX(-100%)",  transition: "all 0.3s ease-in-out", }} className="w-64 bg-white  p-4 space-y-4 text-sm text-gray-800 fixed h-full pt-12">
       {/* Create Button */}
-      <ButtonWithDropdown sidebarOpen={false} />
+      
       {/* Calendar */}
       <MiniCalendar CalanderPrevMonth={() => {}} CalanderNextMonth={() => {}} />
 

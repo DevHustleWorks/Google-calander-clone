@@ -3,14 +3,19 @@ import React from 'react';
 import CalendarHeader from './components/CalendarHeader';
 import Sidebar from './components/Sidebar';
 import CalendarBox from './components/CalendarGrid';
+import ButtonWithDropdown from './components/ButtonWithDropdown';
 export default function App() {
+  const [sidebarOpen, setSidebarOpen] = React.useState(true);
   return (
     <div className="">
-      <CalendarHeader />
+      <CalendarHeader handelMenuChange={
+        () => setSidebarOpen(prev => !prev)
+      } />
       <div className='flex h-[calc(100vh-4.5rem)]'>
-        <Sidebar />
+      <ButtonWithDropdown sidebarOpen={!sidebarOpen} />
+        <Sidebar isSidebarOpen={sidebarOpen} />
         <CalendarBox
-        
+          isSidebarOpen={sidebarOpen}
           gridStyle={
             { display: 'grid', gridTemplateColumns: '1.5rem 1fr' }
           } 
