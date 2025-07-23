@@ -3,7 +3,7 @@ import MiniCalendar from "./Minicalender";
 
 export default function Sidebar({gridStyle, isSidebarOpen}) {
   return (
-    <div style={{...gridStyle, transform: isSidebarOpen ? "translateX(0)" : "translateX(-100%)",  transition: "all 0.3s ease-in-out", }} className="w-64 bg-white  p-4 space-y-4 text-sm text-gray-800 fixed h-full pt-12">
+    <div style={{...gridStyle, transform: isSidebarOpen ? "translateX(0)" : "translateX(-100%)",  transition: "all 0.3s ease-in-out", }} className="w-64 bg-white  p-4 space-y-4 text-sm text-gray-800 fixed h-full pt-12 overflow-y-auto shadow-lg z-10">
       {/* Create Button */}
       
       {/* Calendar */}
