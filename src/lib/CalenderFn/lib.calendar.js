@@ -168,7 +168,32 @@ class Event {
     };
   }
 
+  store() {
+    const existingEvents = JSON.parse(localStorage.getItem('event-data')) || [];
+    existingEvents.push(this.toJSON());
+    localStorage.setItem('event-data', JSON.stringify(existingEvents));
+  }
 
+  static getAll() {
+    const existingEvents = JSON.parse(localStorage.getItem('event-data')) || [];
+    return existingEvents.map(eventData => new Event(eventData));
+  }
+
+  static getById(id) {
+    const existingEvents = JSON.parse(localStorage.getItem('event-data')) || [];
+    const event = existingEvents.find(eventData => eventData.id === id);
+    return event ? new Event(event) : null;
+  }
+
+  static deleteById(id) {
+    const existingEvents = JSON.parse(localStorage.getItem('event-data')) || [];
+    const newEvents = existingEvents.filter(eventData => eventData.id !== id);
+    localStorage.setItem('event-data', JSON.stringify(newEvents));
+  }
+
+  static clear() {
+    localStorage.removeItem('event-data');
+  }
 }
 // export default class CalendarFn {
 

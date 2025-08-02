@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { clsx } from "./Minicalender";
 import { useCalendar } from "../providers/CalendarProvider";
 import { DateFn } from "../lib/date/lib.datefn";
+import { X, Calendar, MapPin, Clock, Info } from 'lucide-react';
 
 export default function CalendarBox({ isSidebarOpen }) {
   const datefn = new DateFn();
@@ -22,8 +23,6 @@ export default function CalendarBox({ isSidebarOpen }) {
       console.error('Error loading holidays:', error);
     }
   };
-
-
 
   const PopupModal = ({ open, date, onClose }) => {
     if (!open) return null;
@@ -65,8 +64,6 @@ export default function CalendarBox({ isSidebarOpen }) {
         " ml-2 border rounded-lg border-gray-100 bg-white m-1 absolute left-0 right-0 bottom-0 top-14 overflow-hidden",
       )}
     >
-
-
       <CalendarGrid
         daysOfWeek={daysOfWeek}
         today={() => new Date()}
@@ -95,9 +92,132 @@ function CalendarGrid({
   const [popup, setPopup] = useState({ open: false, date: null });
   const [eventPopup, setEventPopup] = useState({ open: false, date: null, event: null });
 
-  const EventTile = ({ event }) => {
-    
+  // Google Calendar-style Event Modal
+  const EventModal = ({ open, event, onClose }) => {
+    if (!open || !event) return null;
+
+    const eventDate = new Date(event.iso);
+    const formattedDate = eventDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const getEventTypeColor = (type) => {
+      const typeStr = typeof type === 'string' ? type.toLowerCase() : 
+                     (Array.isArray(type) ? type[0]?.toLowerCase() || '' : '');
+      switch (typeStr) {
+        case 'national':
+        case 'optional holiday':
+          return 'bg-red-500';
+        case 'religious':
+        case 'hinduism':
+          return 'bg-purple-500';
+        case 'observance':
+          return 'bg-blue-500';
+        case 'season':
+          return 'bg-green-500';
+        default:
+          return 'bg-orange-500';
+      }
+    };
+
+    return (
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <div
+          className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <div 
+                className={`w-4 h-4 rounded-full ${getEventTypeColor(Array.isArray(event.type) ? event.type[0] : event.type)}`}
+              ></div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {typeof event.name === 'string' ? event.name : 
+                 (event.name?.name || event.name?.id || 'Unknown Event')}
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-4 space-y-4">
+            {/* Date & Time */}
+            <div className="flex items-start gap-3">
+              <Calendar className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">{formattedDate}</p>
+                <p className="text-sm text-gray-500">All day</p>
+              </div>
+            </div>
+
+            {/* Type */}
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Type</p>
+                <p className="text-sm text-gray-500 capitalize">
+                  {Array.isArray(event.type) ? 
+                    event.type.map(t => typeof t === 'string' ? t : (t?.name || t?.id || 'Unknown')).join(', ') : 
+                    (typeof event.type === 'string' ? event.type : (event.type?.name || event.type?.id || 'Holiday'))}
+                </p>
+              </div>
+            </div>
+
+            {/* Description */}
+            {event.description && (
+              <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Description</p>
+                  <p className="text-sm text-gray-500">
+                    {typeof event.description === 'string' ? event.description : 
+                     (event.description?.description || event.description?.text || 'No description available')}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Country */}
+            {event.country && (
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Country</p>
+                  <p className="text-sm text-gray-500">
+                    {typeof event.country === 'string' ? event.country : 
+                     (event.country?.name || event.country?.id || 'Unknown')}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
+
   // Helper function to get holidays for a specific date
   const getHolidaysForDate = (date) => {
     const day = date.getDate().toString();
@@ -179,7 +299,7 @@ function CalendarGrid({
 
   return (
     <>
-      <div data-jsdata={JSON.stringify(currentMonthHolidays)} className="flex flex-col h-full">
+      <div className="flex flex-col h-full">
         <div className="flex w-full">
           <div className="w-[23px] bg-gray-100"></div>
           <div className="grid grid-cols-7 flex-1">
@@ -215,7 +335,6 @@ function CalendarGrid({
                     return (
                       <div
                         key={dateObj}
-                        data-jsdata={JSON.stringify(holidays)}
                         className={clsx(
                           index < 6 ? "border-r-1" : "",
                           "flex justify-center items-start w-full pt-1 border-b-1 border-gray-200",
@@ -223,11 +342,6 @@ function CalendarGrid({
                       >
                         <h2
                           role="gridcell"
-                          data-date={dateObj.toLocaleDateString('en-IN', {
-                            year: 'numeric',
-                            month: 'numeric',
-                            day: 'numeric',
-                          })}
                           className={clsx(
                             isToday(date)
                               ? "bg-blue-700 text-white"
@@ -273,25 +387,20 @@ function CalendarGrid({
                                 {holidays.map((holiday, holidayIndex) => {
                                    
                                   return (
-                                    <>
-                                      <div
-                                        key={holidayIndex}
-                                        className={clsx(
-                                          "rounded-md flex items-center text-center overflow-x-hidden border cursor-pointer hover:opacity-80 transition-opacity",
-                                          getHolidayTypeColor(holiday.type[0])
-                                        )}
-                                        title={`${holiday.name || 'Unknown Holiday'}${holiday.description ? ` - ${holiday.description}` : ''} (${holiday.type || 'Holiday'})`}
-                                        onClick={() => setEventPopup({ open: true, date: holiday.iso, event: holiday })}
-                                      >
-                                        <div className="ml-1 mr-1 rounded-full p-1 w-1 h-1 bg-current opacity-60"></div>
-                                        <div className="whitespace-nowrap overflow-hidden text-ellipsis font-medium text-xs">
-                                          {holiday.name || 'Unknown Holiday'}
-                                        </div>
+                                    <div
+                                      key={holidayIndex}
+                                      className={clsx(
+                                        "rounded-md flex items-center text-center overflow-x-hidden border cursor-pointer hover:opacity-80 transition-opacity",
+                                        getHolidayTypeColor(Array.isArray(holiday.type) ? holiday.type[0] : holiday.type)
+                                      )}
+                                      title={`${typeof holiday.name === 'string' ? holiday.name : (holiday.name?.name || holiday.name?.id || 'Unknown Holiday')}${holiday.description ? ` - ${typeof holiday.description === 'string' ? holiday.description : (holiday.description?.description || holiday.description?.text || '')}` : ''} (${Array.isArray(holiday.type) ? holiday.type.map(t => typeof t === 'string' ? t : (t?.name || t?.id || 'Unknown')).join(', ') : (typeof holiday.type === 'string' ? holiday.type : (holiday.type?.name || holiday.type?.id || 'Holiday'))})`}
+                                      onClick={() => setEventPopup({ open: true, date: holiday.iso, event: holiday })}
+                                    >
+                                      <div className="ml-1 mr-1 rounded-full p-1 w-1 h-1 bg-current opacity-60"></div>
+                                      <div className="whitespace-nowrap overflow-hidden text-ellipsis font-medium text-xs">
+                                        {typeof holiday.name === 'string' ? holiday.name : (holiday.name?.name || holiday.name?.id || 'Unknown Holiday')}
                                       </div>
-                                      {/* {eventPopup.open && (
-                                        <EventTile event={holidays} />
-                                      )} */}
-                                    </>
+                                    </div>
                                   );
                                 })}
 
@@ -317,6 +426,13 @@ function CalendarGrid({
           })}
         </div>
       </div>
+
+      {/* Event Modal */}
+      <EventModal
+        open={eventPopup.open}
+        event={eventPopup.event}
+        onClose={() => setEventPopup({ open: false, date: null, event: null })}
+      />
     </>
   );
 }
