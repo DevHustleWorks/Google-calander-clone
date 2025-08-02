@@ -3,6 +3,8 @@ import { clsx } from "./Minicalender";
 import { useCalendar } from "../providers/CalendarProvider";
 import { DateFn } from "../lib/date/lib.datefn";
 import { X, Calendar, MapPin, Clock, Info } from 'lucide-react';
+import AddEventDialog from './AddEventDialog';
+import { Event } from '../lib/CalenderFn/lib.calendar';
 
 export default function CalendarBox({ isSidebarOpen }) {
   const datefn = new DateFn();
@@ -91,6 +93,7 @@ function CalendarGrid({
 }) {
   const [popup, setPopup] = useState({ open: false, date: null });
   const [eventPopup, setEventPopup] = useState({ open: false, date: null, event: null });
+  const [addEventDialog, setAddEventDialog] = useState({ open: false, selectedDate: null });
 
   // Google Calendar-style Event Modal
   const EventModal = ({ open, event, onClose }) => {
@@ -204,15 +207,6 @@ function CalendarGrid({
             )}
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Close
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -268,7 +262,21 @@ function CalendarGrid({
     return [];
   };
 
-  // Helper function to check if a date is today
+  const getEventsForDate = (date) => {
+    try {
+      const events = Event.getAll();
+      return events.filter(event => {
+        const eventDate = new Date(event.start);
+        return eventDate.getDate() === date.getDate() &&
+               eventDate.getMonth() === date.getMonth() &&
+               eventDate.getFullYear() === date.getFullYear();
+      });
+    } catch (error) {
+      console.error('Error getting events:', error);
+      return [];
+    }
+  };
+
   const isToday = (date) => {
     const todayDate = today();
     return date.getDate() === todayDate.getDate() &&
@@ -276,9 +284,7 @@ function CalendarGrid({
       date.getFullYear() === todayDate.getFullYear();
   };
 
-  // Helper function to get holiday type color
   const getHolidayTypeColor = (type) => {
-    // Ensure type is a string before calling toLowerCase()
     const typeStr = typeof type === 'string' ? type.toLowerCase() : '';
 
     switch (typeStr) {
@@ -295,6 +301,31 @@ function CalendarGrid({
       default:
         return 'bg-orange-100 border-orange-300 text-orange-800';
     }
+  };
+
+  const getEventColor = (colorId) => {
+    switch (colorId) {
+      case 'red':
+        return 'bg-red-100 border-red-300 text-red-800';
+      case 'green':
+        return 'bg-green-100 border-green-300 text-green-800';
+      case 'purple':
+        return 'bg-purple-100 border-purple-300 text-purple-800';
+      case 'orange':
+        return 'bg-orange-100 border-orange-300 text-orange-800';
+      case 'pink':
+        return 'bg-pink-100 border-pink-300 text-pink-800';
+      default:
+        return 'bg-blue-100 border-blue-300 text-blue-800';
+    }
+  };
+
+  const handleDayClick = (date) => {
+    setAddEventDialog({ open: true, selectedDate: date });
+  };
+
+  const handleEventAdded = (newEvent) => {
+    console.log('New event added:', newEvent);
   };
 
   return (
@@ -332,13 +363,16 @@ function CalendarGrid({
                     const date = new Date(+dateObj);
                     const dateNumber = date.getDate();
                     const holidays = getHolidaysForDate(date);
+                    const events = getEventsForDate(date);
+                    
                     return (
                       <div
                         key={dateObj}
                         className={clsx(
                           index < 6 ? "border-r-1" : "",
-                          "flex justify-center items-start w-full pt-1 border-b-1 border-gray-200",
+                          "flex justify-center items-start w-full pt-1 border-b-1 border-gray-200 cursor-pointer  transition-colors relative",
                         )}
+                        onClick={() => handleDayClick(date)}
                       >
                         <h2
                           role="gridcell"
@@ -346,7 +380,7 @@ function CalendarGrid({
                             isToday(date)
                               ? "bg-blue-700 text-white"
                               : "",
-                            "text-center w-5 h-5 flex items-center justify-center text-[11px] rounded-full font-semibold text-gray-600",
+                            "text-center w-5 h-5 flex items-center justify-center text-[11px] rounded-full font-semibold text-gray-600 z-10 relative",
                           )}
                         >
                           {dateNumber}
@@ -355,26 +389,24 @@ function CalendarGrid({
                     );
                   })}
                 </div>
-                <div className="w-full relative mt-7 ">
-                  <div className="grid grid-cols-7 flex-1 items-start relative z-[999]"
-                    pointerEvents="none"
-                  >
+                <div className="w-full relative mt-7 pointer-events-none">
+                  <div className="grid grid-cols-7 flex-1 items-start relative z-[999]">
                     {DateArray.map((dateObj) => {
                       const date = new Date(+dateObj);
                       const holidays = getHolidaysForDate(date);
+                      const events = getEventsForDate(date);
 
                       return (
-                        <div key={dateObj} role="cell" className="text-[11px] px-1">
+                        <div key={dateObj} role="cell" className="text-[11px] px-1 pointer-events-auto">
                           <h3 className="sr-only">
                             {`
-                               ${holidays.length === 0 ? 'No Event' : `${holidays.length} Event${holidays.length > 1 ? 's' : ''}`} on 
+                               ${holidays.length === 0 && events.length === 0 ? 'No Event' : `${holidays.length + events.length} Event${(holidays.length + events.length) > 1 ? 's' : ''}`} on 
                                ${date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
                             `}
 
                           </h3>
                           <div className="space-y-1">
                             {loading ? (
-                              // Loading indicator
                               <div className="rounded-md flex items-center bg-gray-100 text-center overflow-x-hidden animate-pulse">
                                 <div className="ml-1 mr-1 rounded-full p-1 bg-gray-400 w-1 h-1"></div>
                                 <div className="whitespace-nowrap overflow-hidden text-ellipsis text-gray-500">
@@ -382,19 +414,40 @@ function CalendarGrid({
                                 </div>
                               </div>
                             ) : (
-                              // Holiday events
                               <>
+                                {events.map((event, eventIndex) => (
+                                  <div
+                                    key={`event-${eventIndex}`}
+                                    className={clsx(
+                                      "rounded-md flex items-center text-center overflow-x-hidden border cursor-pointer hover:opacity-80 transition-opacity",
+                                      getEventColor(event.colorId)
+                                    )}
+                                    title={`${event.title}${event.description ? ` - ${event.description}` : ''} (${event.location || 'No location'})`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                    }}
+                                  >
+                                    <div className="ml-1 mr-1 rounded-full p-1 w-1 h-1 bg-current opacity-60"></div>
+                                    <div className="whitespace-nowrap overflow-hidden text-ellipsis font-medium text-xs">
+                                      {event.title}
+                                    </div>
+                                  </div>
+                                ))}
+
                                 {holidays.map((holiday, holidayIndex) => {
                                    
                                   return (
                                     <div
-                                      key={holidayIndex}
+                                      key={`holiday-${holidayIndex}`}
                                       className={clsx(
                                         "rounded-md flex items-center text-center overflow-x-hidden border cursor-pointer hover:opacity-80 transition-opacity",
                                         getHolidayTypeColor(Array.isArray(holiday.type) ? holiday.type[0] : holiday.type)
                                       )}
                                       title={`${typeof holiday.name === 'string' ? holiday.name : (holiday.name?.name || holiday.name?.id || 'Unknown Holiday')}${holiday.description ? ` - ${typeof holiday.description === 'string' ? holiday.description : (holiday.description?.description || holiday.description?.text || '')}` : ''} (${Array.isArray(holiday.type) ? holiday.type.map(t => typeof t === 'string' ? t : (t?.name || t?.id || 'Unknown')).join(', ') : (typeof holiday.type === 'string' ? holiday.type : (holiday.type?.name || holiday.type?.id || 'Holiday'))})`}
-                                      onClick={() => setEventPopup({ open: true, date: holiday.iso, event: holiday })}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEventPopup({ open: true, date: holiday.iso, event: holiday });
+                                      }}
                                     >
                                       <div className="ml-1 mr-1 rounded-full p-1 w-1 h-1 bg-current opacity-60"></div>
                                       <div className="whitespace-nowrap overflow-hidden text-ellipsis font-medium text-xs">
@@ -404,8 +457,7 @@ function CalendarGrid({
                                   );
                                 })}
 
-                                {/* Empty state for dates with no holidays */}
-                                {holidays.length === 0 && (
+                                {holidays.length === 0 && events.length === 0 && (
                                   <div className="rounded-md flex items-center bg-transparent text-center overflow-x-hidden">
                                     <div className="ml-1 mr-1 rounded-full p-1 w-1 h-1 opacity-0"></div>
                                     <div className="whitespace-nowrap overflow-hidden text-ellipsis opacity-0">
@@ -427,11 +479,17 @@ function CalendarGrid({
         </div>
       </div>
 
-      {/* Event Modal */}
       <EventModal
         open={eventPopup.open}
         event={eventPopup.event}
         onClose={() => setEventPopup({ open: false, date: null, event: null })}
+      />
+
+      <AddEventDialog
+        open={addEventDialog.open}
+        selectedDate={addEventDialog.selectedDate}
+        onClose={() => setAddEventDialog({ open: false, selectedDate: null })}
+        onEventAdded={handleEventAdded}
       />
     </>
   );
