@@ -12,7 +12,8 @@ import {
   User,
 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react';
-
+import { UserButton } from '@clerk/clerk-react';
+import { useCalendar } from '../providers/CalendarProvider';
 // Add this above the component to inject a custom style for max-w-415px
 const customStyle = `
   @media (max-width: 415px) {
@@ -89,9 +90,7 @@ function ViewDropdown({ currentView, setView }) {
 
 function ProfileButton() {
   return (
-    <div className="w-8 h-8 rounded-full bg-orange-600 text-white flex items-center justify-center font-semibold cursor-pointer">
-      S
-    </div>
+    <UserButton />
   );
 }
 
@@ -125,10 +124,11 @@ function SearchBar({ onClose }) {
 export default function CalendarHeader({ gridStyle, handelMenuChange }) {
   const [searchBoxOpen, setSearchBoxOpen] = useState(false);
   const [currentView, setView] = useState('month');
-
+  
+  const { goToNextMonth, goToPrevMonth, goToToday, currentDate } = useCalendar();
+  
   return (
     <>
-      {/* Inject custom style for hide-under-415 */}
       <style>{customStyle}</style>
       {searchBoxOpen ? (
         <SearchBar onClose={() => setSearchBoxOpen(false)} />
@@ -148,18 +148,18 @@ export default function CalendarHeader({ gridStyle, handelMenuChange }) {
               className="w-8 h-8"
             />
             <span className="hidden sm:inline text-base sm:text-xl font-normal ml-1">Calendar</span>
-            <button className="ml-2 sm:ml-4 px-3 py-1 sm:px-5 sm:py-2 border border-gray-300 rounded-full text-sm hover:bg-gray-100 hide-under-415">
+            <button onClick={goToToday} className="ml-2 sm:ml-4 px-3 py-1 sm:px-5 sm:py-2 border border-gray-300 rounded-full text-sm hover:bg-gray-100 hide-under-415">
               Today
             </button>
             <div className="flex items-center gap-1 ml-1 hide-under-415">
-              <button className="p-2 rounded-full hover:bg-gray-100">
-                <ArrowLeft className="w-4 h-4" />
+              <button onClick={goToPrevMonth}  className="p-2 rounded-full hover:bg-gray-100">
+                <ArrowLeft  className="w-4 h-4" />
               </button>
-              <button className="p-2 rounded-full hover:bg-gray-100">
-                <ArrowRight className="w-4 h-4" />
+              <button onClick={goToNextMonth} className="p-2 rounded-full hover:bg-gray-100">
+                <ArrowRight  className="w-4 h-4" />
               </button>
             </div>
-            <div className="ml-2 text-base sm:text-lg font-medium whitespace-nowrap">April 2025</div>
+            <div className="ml-2 text-base sm:text-lg font-medium whitespace-nowrap">{currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</div>
           </div>
 
           {/* Center Section: (empty, or add flex-1 for spacing) */}

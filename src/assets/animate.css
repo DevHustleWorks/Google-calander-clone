@@ -1,0 +1,30 @@
+.loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: transparent;
+  overflow: hidden;
+}
+
+
+.loading-bar--active::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10%;
+  height: 3px;
+  background-color: #0c68f1;
+  animation: moveLoadBar 1s cubic-bezier(0.09, 0.89, 0.7, 0.71) infinite;
+}
+
+@keyframes moveLoadBar {
+  0% {
+    left: -10%;
+  }
+  100% {
+    left: 110%;
+  }
+}

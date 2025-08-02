@@ -1,10 +1,13 @@
 
 export const DateFn = function (date = new Date()) {
   this.date = date;
-  this.eachDayOfInterval = this.eachDayOfInterval.bind(this);
 }
 
+
+
 DateFn.prototype.millisecond = function (args, options = {}) {
+  DateFn.call(this,  new Date());
+  
   if (typeof args !== "string") {
     throw new Error("args must be a string");
   }
@@ -30,16 +33,20 @@ DateFn.prototype.millisecond = function (args, options = {}) {
   return MS_MAP[type];
 }
 
+
+
 DateFn.prototype.startOfWeek = function (
   date = this.date, { weekStartsOn = 0 }
 ) {
+  DateFn.call(this,  new Date());
+
   if (typeof date !== 'object' && typeof date !== 'string') return;
 
   if (!(date instanceof Date) && typeof date !== 'string' && typeof date !== 'number') {
     throw new Error("Invalid date input: must be a Date, string, or timestamp");
   }
    
-  
+
   const inputDate = new Date(date);
   
   if (isNaN(inputDate)) throw new Error("Invalid date");
@@ -50,15 +57,16 @@ DateFn.prototype.startOfWeek = function (
   weekStartsOn = ((weekStartsOn % 7) + 7) % 7;
   
   const diff = (currentDay - weekStartsOn + 7) % 7;
+  
   const msInDays = this.millisecond("--days");
 
-  return new Date(dateRef.getTime() - diff * msInDays);
+  return new Date(inputDate.getTime() - diff * msInDays);
 }
 
 
 
 DateFn.prototype.endOfWeek = function (date, { weekStartsOn = 0 } = {}) {
-  
+  DateFn.call(this,  new Date());
   
 }
 
@@ -68,7 +76,7 @@ DateFn.prototype.endOfWeek = function (date, { weekStartsOn = 0 } = {}) {
  * @returns {Date[]} Array of Date objects from start to end
  */
 DateFn.prototype.eachDayOfInterval = function ({ start, end }) {
-
+  DateFn.call(this,  new Date());
   if (
     (!(start instanceof Date) && typeof start !== 'string') ||
     (!(end instanceof Date) && typeof end !== 'string')
@@ -99,12 +107,54 @@ DateFn.prototype.eachDayOfInterval = function ({ start, end }) {
   return _eachDayOfInterval;
 }
 
-DateFn.prototype.getDaysInWeek = function () {
+// Returns an array of days in a week between two dates
+// start and end should be Date or string
+// start is inclusive, end is exclusive
+// If start is not provided, it defaults to the start of the week of the current date
+// Returns an array of strings representing the days of the week in short format (e.g., "Mon", "Tue", etc.)
+DateFn.prototype.getDaysInWeek = function ({ start, end }) {
+  DateFn.call(this,  new Date());
+
+  if ((!(start instanceof Date) && typeof start !== 'string') ||
+    (!(end instanceof Date) && typeof end !== 'string')
+  ) {
+    throw new Error("Invalid input: start or end must be a Date or string");
+  }
+
+  if (
+    (typeof start !== 'object' && typeof start !== 'string') &&
+    (typeof end !== 'object' && typeof end !== 'string')
+  ) return;
+
+  let _getDaysInWeek = new Array();
+
+  let startDate = new Date(start);
+  let endDate = new Date(end);
+
+  let msInDays = this.millisecond("--days");
+
+  let weekStartsOn = 0;  
+
+  for (let idx = startDate.getDay(); idx <= endDate.getDay(); idx++) {
+    _getDaysInWeek.push(
+      new Date(+startDate + (idx - weekStartsOn) * msInDays).toLocaleDateString('en-US', {
+         weekday: 'short',
+      })
+    );
+  }
+
+  return _getDaysInWeek;
 }
 
+// Returns the week of the year for a given date
+// If date is not provided, it defaults to the current date
+// If weekStartsOn is not provided, it defaults to 0 (Sunday)
+// Returns the week number as an integer
 DateFn.prototype.getWeekOfYear = function (
   date = new Date(), { weekStartsOn = 0 }
 ) {
+  DateFn.call(this,  new Date());
+  
   const year = date.getFullYear();
 
   const startOfYear = new Date(year, 0, 1);
@@ -120,20 +170,25 @@ DateFn.prototype.getWeekOfYear = function (
   return weeksPassed;
 }
 
+// Returns an array of weeks in a month
+// firstDateOfMonth should be a Date or string representing the first date of the month
+// Returns an array of objects, each containing the week number as the key and an array of Date objects representing the days of that wee
 DateFn.prototype.getFullMonth = function (firstDateOfMonth) {
 
   if ((!(firstDateOfMonth instanceof Date) && typeof firstDateOfMonth !== "string")) {
     return Error("Invalid Date format: firstDateOfMonth should be Date | String");
   }
 
-  // console.log(this.millisecond("--hours")); 
-  let _getFullMonth = [];
-
-  const firstDate = (firstDateOfMonth instanceof Date) ? firstDateOfMonth : new Date(firstDateOfMonth);
+  //  (this.millisecond("--hours")); 
+  let _getFullMonth = {};
+  
+  if(firstDateOfMonth === "Invalid Date") return ; 
+  const firstDate = (firstDateOfMonth instanceof Date) 
+      ? new Date(firstDateOfMonth.getFullYear(), firstDateOfMonth.getMonth(), 1)  
+      : new Date(firstDateOfMonth.getFullYear(), firstDateOfMonth.getMonth(), 1)
   const startDate = this.startOfWeek(firstDate, { weekStartsOn: 0 });
-  const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0); 
-  // this.endOfWeek(new Date(firstDate.getFullYear(), firstDate.getMonth() + 1, 0), { weekStartsOn: 0 });
-  // console.log({firstDate, startDate, endDate});  
+  const endDate = new Date(firstDate.getFullYear(), firstDate.getMonth() + 1, 0); 
+
   const ms = this.millisecond("--weeks");
 
   for (
@@ -145,8 +200,38 @@ DateFn.prototype.getFullMonth = function (firstDateOfMonth) {
       start: this.startOfWeek(currentDate, { weekStartsOn: 0 }),
       end: new Date(currentDate.getTime() + ms - 1),
     });
-    // _getFullMonth[this.getWeekOfYear(currentDate, { weekStartsOn: 0 })] = week
-    _getFullMonth.push({ [this.getWeekOfYear(currentDate, { weekStartsOn: 0 })]: week })
+    _getFullMonth[this.getWeekOfYear(currentDate, { weekStartsOn: 0 })] = week
+    // _getFullMonth.push({ [this.getWeekOfYear(currentDate, { weekStartsOn: 0 })]: week })
   }
   return _getFullMonth; 
+}
+
+
+DateFn.prototype.getFullWeek = function ({ start, end }) {
+  DateFn.call(this,  new Date());
+  if ((!(start instanceof Date) && typeof start !== 'string') ||
+    (!(end instanceof Date) && typeof end !== 'string')) {
+    throw new Error("Invalid input: start or end must be a Date or string");
+  }
+
+  if (
+    (typeof start !== 'object' && typeof start !== 'string') &&
+    (typeof end !== 'object' && typeof end !== 'string')
+  ) return;
+
+  let _getFullWeek = [];
+
+  let startDate = new Date(start);
+  let endDate = new Date(end);
+
+  let msInDays = this.millisecond("--days");
+
+  for (let idx = startDate.getDay(); idx <= endDate.getDay(); idx++) {
+    _getFullWeek.push(
+      new Date(+startDate + (idx - startDate.getDay()) * msInDays)
+    );
+  }
+
+  return _getFullWeek;
+
 }
