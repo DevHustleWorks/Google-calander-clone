@@ -5,6 +5,7 @@ import { DateFn } from "../lib/date/lib.datefn";
 
 export default function CalendarBox({ isSidebarOpen }) {
   const datefn = new DateFn();
+
   const [popup, setPopup] = useState({ open: false, date: null });
 
   const { currentDate, currentMonthHolidays, loading, calendar } = useCalendar();
@@ -22,20 +23,8 @@ export default function CalendarBox({ isSidebarOpen }) {
     }
   };
 
-  // Test function to check localStorage data
-  const testLocalStorageData = () => {
-    try {
-      const calendarData = JSON.parse(localStorage.getItem("calendar-data"));
-      
-      if (calendarData?.publicHolidays) {
-        // Data is available for debugging if needed
-      }
-    } catch (error) {
-      console.error('Error reading localStorage:', error);
-    }
-  };
 
-  // Popup modal for mobile
+
   const PopupModal = ({ open, date, onClose }) => {
     if (!open) return null;
 
@@ -76,8 +65,8 @@ export default function CalendarBox({ isSidebarOpen }) {
         " ml-2 border rounded-lg border-gray-100 bg-white m-1 absolute left-0 right-0 bottom-0 top-14 overflow-hidden",
       )}
     >
-      
-     
+
+
       <CalendarGrid
         daysOfWeek={daysOfWeek}
         today={() => new Date()}
@@ -103,22 +92,27 @@ function CalendarGrid({
   currentMonthHolidays,
   loading,
 }) {
+  const [popup, setPopup] = useState({ open: false, date: null });
+  const [eventPopup, setEventPopup] = useState({ open: false, date: null, event: null });
 
+  const EventTile = ({ event }) => {
+    
+  };
   // Helper function to get holidays for a specific date
   const getHolidaysForDate = (date) => {
     const day = date.getDate().toString();
     const month = (date.getMonth() + 1).toString(); // Convert to 1-indexed
     const year = date.getFullYear().toString();
-    
+
     // Check if we have holidays for this date
-    if (currentMonthHolidays && 
-        currentMonthHolidays[year] && 
-        currentMonthHolidays[year][month] && 
-        currentMonthHolidays[year][month][day]) {
+    if (currentMonthHolidays &&
+      currentMonthHolidays[year] &&
+      currentMonthHolidays[year][month] &&
+      currentMonthHolidays[year][month][day]) {
       const holidays = currentMonthHolidays[year][month][day];
       return holidays;
     }
-    
+
     // Fallback: try to get from the old localStorage format
     try {
       const calendarData = JSON.parse(localStorage.getItem("calendar-data"));
@@ -130,7 +124,7 @@ function CalendarGrid({
           if (!holiday || !holiday.date) {
             return false;
           }
-          
+
           // Handle different date formats
           let holidayDate;
           if (typeof holiday.date === 'string') {
@@ -140,17 +134,17 @@ function CalendarGrid({
           } else {
             return false;
           }
-          
-          return holidayDate.getDate() === date.getDate() && 
-                 holidayDate.getMonth() === date.getMonth() && 
-                 holidayDate.getFullYear() === date.getFullYear();
+
+          return holidayDate.getDate() === date.getDate() &&
+            holidayDate.getMonth() === date.getMonth() &&
+            holidayDate.getFullYear() === date.getFullYear();
         });
         return dayHolidays;
       }
     } catch (error) {
       console.error('Error accessing localStorage holidays:', error);
     }
-    
+
     return [];
   };
 
@@ -158,15 +152,15 @@ function CalendarGrid({
   const isToday = (date) => {
     const todayDate = today();
     return date.getDate() === todayDate.getDate() &&
-           date.getMonth() === todayDate.getMonth() &&
-           date.getFullYear() === todayDate.getFullYear();
+      date.getMonth() === todayDate.getMonth() &&
+      date.getFullYear() === todayDate.getFullYear();
   };
 
   // Helper function to get holiday type color
   const getHolidayTypeColor = (type) => {
     // Ensure type is a string before calling toLowerCase()
     const typeStr = typeof type === 'string' ? type.toLowerCase() : '';
-    
+
     switch (typeStr) {
       case 'national':
       case 'optional holiday':
@@ -185,7 +179,7 @@ function CalendarGrid({
 
   return (
     <>
-      <div className="flex flex-col h-full">
+      <div data-jsdata={JSON.stringify(currentMonthHolidays)} className="flex flex-col h-full">
         <div className="flex w-full">
           <div className="w-[23px] bg-gray-100"></div>
           <div className="grid grid-cols-7 flex-1">
@@ -217,15 +211,23 @@ function CalendarGrid({
                   {DateArray.map((dateObj, index) => {
                     const date = new Date(+dateObj);
                     const dateNumber = date.getDate();
+                    const holidays = getHolidaysForDate(date);
                     return (
                       <div
                         key={dateObj}
+                        data-jsdata={JSON.stringify(holidays)}
                         className={clsx(
                           index < 6 ? "border-r-1" : "",
                           "flex justify-center items-start w-full pt-1 border-b-1 border-gray-200",
                         )}
                       >
                         <h2
+                          role="gridcell"
+                          data-date={dateObj.toLocaleDateString('en-IN', {
+                            year: 'numeric',
+                            month: 'numeric',
+                            day: 'numeric',
+                          })}
                           className={clsx(
                             isToday(date)
                               ? "bg-blue-700 text-white"
@@ -239,15 +241,23 @@ function CalendarGrid({
                     );
                   })}
                 </div>
-                <div className="w-full relative mt-7 z-[99999]">
-                  <div className="grid grid-cols-7 flex-1 items-start relative z-[9999999]">
+                <div className="w-full relative mt-7 ">
+                  <div className="grid grid-cols-7 flex-1 items-start relative z-[999]"
+                    pointerEvents="none"
+                  >
                     {DateArray.map((dateObj) => {
                       const date = new Date(+dateObj);
                       const holidays = getHolidaysForDate(date);
-                      
+
                       return (
                         <div key={dateObj} role="cell" className="text-[11px] px-1">
-                          <h3 className="sr-only">Holidays for {date.toDateString()}</h3>
+                          <h3 className="sr-only">
+                            {`
+                               ${holidays.length === 0 ? 'No Event' : `${holidays.length} Event${holidays.length > 1 ? 's' : ''}`} on 
+                               ${date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+                            `}
+
+                          </h3>
                           <div className="space-y-1">
                             {loading ? (
                               // Loading indicator
@@ -261,22 +271,30 @@ function CalendarGrid({
                               // Holiday events
                               <>
                                 {holidays.map((holiday, holidayIndex) => {
+                                   
                                   return (
-                                    <div 
-                                      key={holidayIndex}
-                                      className={clsx(
-                                        "rounded-md flex items-center text-center overflow-x-hidden border cursor-pointer hover:opacity-80 transition-opacity",
-                                        getHolidayTypeColor(holiday.type[0])
-                                      )}
-                                      title={`${holiday.name || 'Unknown Holiday'}${holiday.description ? ` - ${holiday.description}` : ''} (${holiday.type || 'Holiday'})`}
-                                    >
-                                      <div className="ml-1 mr-1 rounded-full p-1 w-1 h-1 bg-current opacity-60"></div>
-                                      <div className="whitespace-nowrap overflow-hidden text-ellipsis font-medium text-xs">
-                                        {holiday.name || 'Unknown Holiday'}
+                                    <>
+                                      <div
+                                        key={holidayIndex}
+                                        className={clsx(
+                                          "rounded-md flex items-center text-center overflow-x-hidden border cursor-pointer hover:opacity-80 transition-opacity",
+                                          getHolidayTypeColor(holiday.type[0])
+                                        )}
+                                        title={`${holiday.name || 'Unknown Holiday'}${holiday.description ? ` - ${holiday.description}` : ''} (${holiday.type || 'Holiday'})`}
+                                        onClick={() => setEventPopup({ open: true, date: holiday.iso, event: holiday })}
+                                      >
+                                        <div className="ml-1 mr-1 rounded-full p-1 w-1 h-1 bg-current opacity-60"></div>
+                                        <div className="whitespace-nowrap overflow-hidden text-ellipsis font-medium text-xs">
+                                          {holiday.name || 'Unknown Holiday'}
+                                        </div>
                                       </div>
-                                    </div>
+                                      {/* {eventPopup.open && (
+                                        <EventTile event={holidays} />
+                                      )} */}
+                                    </>
                                   );
                                 })}
+
                                 {/* Empty state for dates with no holidays */}
                                 {holidays.length === 0 && (
                                   <div className="rounded-md flex items-center bg-transparent text-center overflow-x-hidden">

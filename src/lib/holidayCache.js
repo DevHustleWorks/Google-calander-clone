@@ -11,11 +11,9 @@ class HolidayCacheService {
   async initDB() {
     return openDB(this.dbName, this.dbVersion, {
       upgrade(db) {
-        // Create holiday cache store
         if (!db.objectStoreNames.contains('holiday_cache')) {
           db.createObjectStore('holiday_cache', { keyPath: 'id' });
         }
-        // Create meta store
         if (!db.objectStoreNames.contains('meta')) {
           db.createObjectStore('meta', { keyPath: 'key' });
         }
@@ -104,7 +102,6 @@ class HolidayCacheService {
   async storeHolidaysInIndexedDB(data, startYear) {
     const db = await this.initDB();
     
-    // Store the holiday data
     await db.put(this.holidayStoreName, {
       id: 'holidays',
       data: data,
@@ -127,7 +124,6 @@ class HolidayCacheService {
     try {
       const db = await this.initDB();
       
-      // Get holiday data
       const holidayData = await db.get(this.holidayStoreName, 'holidays');
       const metaData = await db.get(this.metaStoreName, 'holiday_meta');
       
